@@ -1,0 +1,22 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.name}" plugins-version="2">
+
+	<plugin-info>
+		<description>${project.description}</description>
+		<version>${project.version}</version>
+		<vendor name="${project.organization.name}" url="${project.organization.url}" />
+		<param name="vendor-icon">images/rtve_16x16.png</param>
+		<param name="vendor-logo">images/rtve_130x130.png</param>
+		<param name="plugin-icon">images/plugin_ico_16x16.png</param>
+		<param name="plugin-logo">images/plugin_ico_75x75.png</param>
+	</plugin-info>
+
+	<gadget key="prestamos-gadget-plugin" name="Prestamos JIRA Gadget" location="gadget.xml" />
+
+	<web-resource key="prestamos-gadget-plugin-resources" name="prestamos-gadget-plugin Web Resources">
+		<resource type="download" name="prestamos-gadget-plugin.css" location="/css/prestamos-gadget-plugin.css"/>
+		<resource type="download" name="prestamos-gadget-plugin.js" location="/js/prestamos-gadget-plugin.js"/>
+		<resource type="download" name="gadget-screenshot.png" location="images/gadget-screenshot.png"/>
+		<resource type="download" name="gadget-thumb.png" location="images/gadget-thumb.png"/>
+	</web-resource>
+
+</atlassian-plugin>

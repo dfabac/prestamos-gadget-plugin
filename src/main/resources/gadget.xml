@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+	<ModulePrefs
+			title="Préstamos"
+			author="rtve.es"
+			author_email="dfabac@gmail.com"
+			description="Préstamos JIRA Gadget"
+			screenshot='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-screenshot.png")'
+			thumbnail='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-thumb.png")'>
+		<Optional feature="gadget-directory">
+			<Param name="categories">
+                		Other
+			</Param>
+		</Optional>
+		<Require feature="dynamic-height" />
+		<Require feature="tabs" />
+		<Require feature="settitle"/>
+		<Optional feature="auth-refresh" />
+	</ModulePrefs>
+	<Content type="html" view="default"><![CDATA[
+		
+		<style TYPE="text/css">
+				.tablib_content_container { 
+				max-height: 150px;
+				overflow: -moz-scrollbars-vertical; 
+				overflow-y:scroll; 
+			}
+		</style>
+
+		<script type="text/javascript">
+
+
+			function issueTypes() {
+				_content = {};
+				
+				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/project/TEST";
+				var params = {};
+				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
+				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
+
+				gadgets.io.makeRequest(url, function (response,res) {
+					var issuetypes = response.data.issueTypes;
+					for(var it in issuetypes) {
+						_content[issuetypes[it].id] = issuetypes[it].name;
+						console.log("leo:" + issuetypes[it].name);
+					}
+				}, params);
+
+				return {
+					list:    function() { return _content; },
+					getName: function(id) { return _content[id]; }
+				}
+			}
+
+
+			var tipos =  { 0: "Mis reservas", 1: "Móviles", 2: "Portátiles" };
+
+			var tabs = new gadgets.TabSet(__MODULE_ID__);
+
+
+			function makeTab(tabId) {
+				var selectedTab = tabs.getSelectedTab();
+
+				console.log("ID issueType para JQL: " + tabId);
+
+				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/search?jql=";
+				url = url + escape("order+by+duedate");
+
+				var params = {};
+				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
+				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
+
+				gadgets.io.makeRequest(url, function (response) {
+					var issues = response.data.issues;
+
+  					var main = document.createElement("div");
+					var tbl  = document.createElement("table");
+					var tblBody = document.createElement("tbody");
+
+  					for(var issue in issues) {
+  						tblBody.appendChild(makeRow(issues[issue]));
+  					}
+ 
+  					tbl.appendChild(tblBody);
+  					main.appendChild(tbl);
+ 
+					var item = document.getElementById(tabId);
+					if (item.childNodes[0]) {
+						item.replaceChild(main, item.childNodes[0]);
+					} else {
+						item.appendChild(main);
+					}
+					
+					gadgets.window.adjustHeight();
+					
+				}, params);
+			}
+
+			function makeRow(issue){
+				var row = document.createElement("tr");
+
+				var a = document.createElement('a');
+				a.appendChild(document.createTextNode(issue.key));
+				a.href = "__ATLASSIAN_BASE_URL/browse/" + issue.key;
+				a.target="_parent";
+
+				var cellKey = document.createElement("td");
+				cellKey.appendChild(a);		
+
+				var cellItem = document.createElement("td");
+				cellItem.appendChild(document.createTextNode(issue.fields.summary));
+
+				var cellButton = document.createElement("td");
+				var button = document.createElement("input");
+				button.type = "button";
+				button.value = "Reservar";
+				cellButton.appendChild(button);
+				
+				row.appendChild(cellKey);
+				row.appendChild(cellItem);
+				row.appendChild(cellButton);
+
+				return row;
+			}
+
+			gadgets.util.registerOnLoadHandler(function init() {
+				for (var t in tipos) {
+					tabs.addTab(tipos[t], {
+						contentContainer: document.getElementById("tab_" + t),
+						callback: makeTab
+					});
+				}
+			});
+			
+		</script>
+		
+		]]></Content>
+</Module>
