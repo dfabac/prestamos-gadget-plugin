@@ -21,7 +21,7 @@
 
 	<Content type="html" view="default"><![CDATA[
 		<style TYPE="text/css">
-				.tablib_content_container { 
+			.tablib_content_container { 
 				max-height: 150px;
 				overflow: -moz-scrollbars-vertical; 
 				overflow-y:scroll; 
@@ -143,5 +143,5 @@
 
 		</script>
 
-		]]></Content>
+	]]></Content>
 </Module>
