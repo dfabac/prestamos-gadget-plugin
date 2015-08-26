@@ -14,11 +14,12 @@
 		</Optional>
 		<Require feature="dynamic-height" />
 		<Require feature="tabs" />
-		<Require feature="settitle"/>
+		<Require feature="settitle" />
+		<Require feature="minimessage" />
 		<Optional feature="auth-refresh" />
 	</ModulePrefs>
+
 	<Content type="html" view="default"><![CDATA[
-		
 		<style TYPE="text/css">
 				.tablib_content_container { 
 				max-height: 150px;
@@ -29,34 +30,10 @@
 
 		<script type="text/javascript">
 
-
-			function issueTypes() {
-				_content = {};
-				
-				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/project/TEST";
-				var params = {};
-				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
-				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
-
-				gadgets.io.makeRequest(url, function (response,res) {
-					var issuetypes = response.data.issueTypes;
-					for(var it in issuetypes) {
-						_content[issuetypes[it].id] = issuetypes[it].name;
-						console.log("leo:" + issuetypes[it].name);
-					}
-				}, params);
-
-				return {
-					list:    function() { return _content; },
-					getName: function(id) { return _content[id]; }
-				}
-			}
-
-
-			var tipos =  { 0: "Mis reservas", 1: "Móviles", 2: "Portátiles" };
+			var msg = new gadgets.MiniMessage(__MODULE_ID__);
+			msg.createDismissibleMessage("Please close me when you're done reading me.");
 
 			var tabs = new gadgets.TabSet(__MODULE_ID__);
-
 
 			function makeTab(tabId) {
 				var selectedTab = tabs.getSelectedTab();
@@ -90,7 +67,7 @@
 					} else {
 						item.appendChild(main);
 					}
-					
+
 					gadgets.window.adjustHeight();
 					
 				}, params);
@@ -123,16 +100,34 @@
 				return row;
 			}
 
-			gadgets.util.registerOnLoadHandler(function init() {
-				for (var t in tipos) {
-					tabs.addTab(tipos[t], {
-						contentContainer: document.getElementById("tab_" + t),
-						callback: makeTab
-					});
-				}
-			});
-			
+			//var asset_types = [];
+			var asset_types = {};
+
+			function init() {
+
+				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/project/TEST";
+				var params = {};
+				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
+				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
+
+				gadgets.io.makeRequest(url, function (response,res) {
+					var issuetypes = response.data.issueTypes;
+					for(var it in issuetypes) {
+						var tab_id = tabs.addTab(issuetypes[it].name, {
+							callback: makeTab,
+							tooltip: "ID: " + issuetypes[it].id
+						});
+
+						asset_types[issuetypes[it].id] = {
+							name: issuetypes[it].name, 
+							tab_id: tab_id
+						};
+					}
+				}, params);
+			}
+			gadgets.util.registerOnLoadHandler(init);
+
 		</script>
-		
+
 		]]></Content>
 </Module>
