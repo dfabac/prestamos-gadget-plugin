@@ -30,15 +30,27 @@
 
 		<script type="text/javascript">
 
-			var msg = new gadgets.MiniMessage(__MODULE_ID__);
-			msg.createDismissibleMessage("Please close me when you're done reading me.");
+			//var msg = new gadgets.MiniMessage(__MODULE_ID__);
+			//msg.createDismissibleMessage("Please close me when you're done reading me.");
 
 			var tabs = new gadgets.TabSet(__MODULE_ID__);
+
+			function isEmptyObj(obj){
+				for(var p in obj) {
+					if(obj.hasOwnProperty(p))
+						return false;
+					}
+				return true;
+			}
 
 			function makeTab(tabId) {
 				var selectedTab = tabs.getSelectedTab();
 
-				console.log("ID issueType para JQL: " + tabId);
+				if(isEmptyObj(asset_types)) {  // esto sera un if getName y comparara con "Mis reservas"
+					console.log("Aun no se pero no me hace falta!");
+				} else {
+					console.log("ID issueType para JQL: " + asset_types[tabId].id);
+				}
 
 				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/search?jql=";
 				url = url + escape("order+by+duedate");
@@ -78,7 +90,7 @@
 
 				var a = document.createElement('a');
 				a.appendChild(document.createTextNode(issue.key));
-				a.href = "__ATLASSIAN_BASE_URL/browse/" + issue.key;
+				a.href = "__ATLASSIAN_BASE_URL__/browse/" + issue.key;
 				a.target="_parent";
 
 				var cellKey = document.createElement("td");
@@ -100,7 +112,6 @@
 				return row;
 			}
 
-			//var asset_types = [];
 			var asset_types = {};
 
 			function init() {
@@ -118,13 +129,16 @@
 							tooltip: "ID: " + issuetypes[it].id
 						});
 
-						asset_types[issuetypes[it].id] = {
+						asset_types[tab_id] = {
 							name: issuetypes[it].name, 
-							tab_id: tab_id
+							id:         issuetypes[it].id
 						};
+
+						console.log(asset_types.toSource());
 					}
 				}, params);
 			}
+
 			gadgets.util.registerOnLoadHandler(init);
 
 		</script>
