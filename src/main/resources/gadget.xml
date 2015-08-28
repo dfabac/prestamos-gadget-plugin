@@ -9,7 +9,7 @@
 			thumbnail='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-thumb.png")'>
 		<Optional feature="gadget-directory">
 			<Param name="categories">
-                		Other
+                Other
 			</Param>
 		</Optional>
 		<Require feature="dynamic-height" />
@@ -20,6 +20,9 @@
 	</ModulePrefs>
 
 	<Content type="html" view="default"><![CDATA[
+
+		#requireResource("com.atlassian.jira.gadgets:common")
+		#includeResources()
 		<style TYPE="text/css">
 			.tablib_content_container { 
 				max-height: 150px;
@@ -33,27 +36,22 @@
 			//var msg = new gadgets.MiniMessage(__MODULE_ID__);
 			//msg.createDismissibleMessage("Please close me when you're done reading me.");
 
+			var PROJECT_KEY = 'TEST';
+
 			var tabs = new gadgets.TabSet(__MODULE_ID__);
 
-			function isEmptyObj(obj){
-				for(var p in obj) {
-					if(obj.hasOwnProperty(p))
-						return false;
-					}
-				return true;
-			}
-
 			function makeTab(tabId) {
-				var selectedTab = tabs.getSelectedTab();
-
-				if(isEmptyObj(asset_types)) {  // esto sera un if getName y comparara con "Mis reservas"
-					console.log("Aun no se pero no me hace falta!");
-				} else {
-					console.log("ID issueType para JQL: " + asset_types[tabId].id);
-				}
-
 				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/search?jql=";
-				url = url + escape("order+by+duedate");
+				url = url + escape("project = " + PROJECT_KEY);
+
+				if(tabs.getSelectedTab().getIndex() == 0) {
+					// reservas de usuario
+					url = url + escape(" AND assignee in (currentUser())");
+				} else {
+					// material disponible
+					var issuetype = asset_types[tabId].id;
+					url = url + escape(" AND assignee is EMPTY AND issuetype =" + issuetype);
+				}
 
 				var params = {};
 				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
@@ -62,14 +60,15 @@
 				gadgets.io.makeRequest(url, function (response) {
 					var issues = response.data.issues;
 
-  					var main = document.createElement("div");
-					var tbl  = document.createElement("table");
+  					var main    = document.createElement("div");
+					var tbl     = document.createElement("table");
 					var tblBody = document.createElement("tbody");
 
   					for(var issue in issues) {
   						tblBody.appendChild(makeRow(issues[issue]));
   					}
- 
+					
+					tbl.className = "issue-table";
   					tbl.appendChild(tblBody);
   					main.appendChild(tbl);
  
@@ -81,12 +80,12 @@
 					}
 
 					gadgets.window.adjustHeight();
-					
 				}, params);
 			}
 
 			function makeRow(issue){
 				var row = document.createElement("tr");
+				row.className = "issuerow";
 
 				var a = document.createElement('a');
 				a.appendChild(document.createTextNode(issue.key));
@@ -94,8 +93,9 @@
 				a.target="_parent";
 
 				var cellKey = document.createElement("td");
-				cellKey.appendChild(a);		
-
+				cellKey.className = "issue-link";
+				cellKey.appendChild(a);
+				
 				var cellItem = document.createElement("td");
 				cellItem.appendChild(document.createTextNode(issue.fields.summary));
 
@@ -104,7 +104,7 @@
 				button.type = "button";
 				button.value = "Reservar";
 				cellButton.appendChild(button);
-				
+
 				row.appendChild(cellKey);
 				row.appendChild(cellItem);
 				row.appendChild(cellButton);
@@ -115,7 +115,6 @@
 			var asset_types = {};
 
 			function init() {
-
 				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/project/TEST";
 				var params = {};
 				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
@@ -123,18 +122,24 @@
 
 				gadgets.io.makeRequest(url, function (response,res) {
 					var issuetypes = response.data.issueTypes;
+
+					// pestaña de reservas del usuario
+					tabs.addTab('Mis reservas', {
+						callback: makeTab,
+						index: 0
+					});
+
+					// pestañas para resto material disponible
 					for(var it in issuetypes) {
 						var tab_id = tabs.addTab(issuetypes[it].name, {
-							callback: makeTab,
-							tooltip: "ID: " + issuetypes[it].id
+							callback : makeTab,
+							tooltip  : "ID: " + issuetypes[it].id
 						});
 
 						asset_types[tab_id] = {
-							name: issuetypes[it].name, 
-							id:         issuetypes[it].id
+							name : issuetypes[it].name, 
+							id   : issuetypes[it].id
 						};
-
-						console.log(asset_types.toSource());
 					}
 				}, params);
 			}
