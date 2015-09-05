@@ -1,0 +1,12 @@
+<messagebundle>
+	<msg name="gadget.title">Préstamos</msg>
+	<msg name="gadget.description">Préstamos JIRA Gadget</msg>
+
+	<msg name="button.reserve">Reservar</msg>
+	<msg name="button.cancelreservation">Anular reserva</msg>
+	<msg name="issue.comment.reserve">Reservado por usuario.</msg>
+	<msg name="issue.comment.cancelreservation">Reserva anulada por usuario.</msg>
+
+	<!-- TODO - las siguentes son properties, sacar a fichero --> 
+	<msg name="config.workflow.key">TEST</msg>
+</messagebundle>

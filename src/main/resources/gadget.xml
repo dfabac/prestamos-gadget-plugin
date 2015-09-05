@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Module>
 	<ModulePrefs
-			title="Préstamos"
+			title="__MSG_gadget.title__"
 			author="rtve.es"
 			author_email="dfabac@gmail.com"
-			description="Préstamos JIRA Gadget"
+			description="__MSG_gadget.description__"
 			screenshot='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-screenshot.png")'
 			thumbnail='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-thumb.png")'>
 		<Optional feature="gadget-directory">
@@ -17,12 +17,14 @@
 		<Require feature="settitle" />
 		<Require feature="minimessage" />
 		<Optional feature="auth-refresh" />
+		<Locale messages='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "i18n/ALL_ALL.xml")'/>
 	</ModulePrefs>
 
 	<Content type="html" view="default"><![CDATA[
 
 		#requireResource("com.atlassian.jira.gadgets:common")
 		#includeResources()
+
 		<style TYPE="text/css">
 			.tablib_content_container { 
 				max-height: 150px;
@@ -33,24 +35,28 @@
 
 		<script type="text/javascript">
 
-			//var msg = new gadgets.MiniMessage(__MODULE_ID__);
-			//msg.createDismissibleMessage("Please close me when you're done reading me.");
+			var msg = new gadgets.MiniMessage(__MODULE_ID__);
 
-			var PROJECT_KEY = 'TEST';
+			var PROJECT_KEY = "__MSG_config.workflow.key__";
+
+			var API_URL = "__ATLASSIAN_BASE_URL__/rest/api/latest"; 
+
+			var item_types = {};
 
 			var tabs = new gadgets.TabSet(__MODULE_ID__);
 
+
 			function makeTab(tabId) {
-				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/search?jql=";
+				url = API_URL + "/search?jql=";
 				url = url + escape("project = " + PROJECT_KEY);
 
 				if(tabs.getSelectedTab().getIndex() == 0) {
 					// reservas de usuario
-					url = url + escape(" AND assignee in (currentUser())");
+					url = url + escape(' AND status IN ("In Progress", "Done")');
 				} else {
 					// material disponible
-					var issuetype = asset_types[tabId].id;
-					url = url + escape(" AND assignee is EMPTY AND issuetype =" + issuetype);
+					var issuetype = item_types[tabId].id;
+					url = url + escape(' AND status = "To Do" AND issuetype =' + issuetype);
 				}
 
 				var params = {};
@@ -65,7 +71,7 @@
 					var tblBody = document.createElement("tbody");
 
   					for(var issue in issues) {
-  						tblBody.appendChild(makeRow(issues[issue]));
+  						tblBody.appendChild(makeRow(issues[issue], tabId));
   					}
 					
 					tbl.className = "issue-table";
@@ -83,7 +89,7 @@
 				}, params);
 			}
 
-			function makeRow(issue){
+			function makeRow(issue, tabId){
 				var row = document.createElement("tr");
 				row.className = "issuerow";
 
@@ -95,14 +101,24 @@
 				var cellKey = document.createElement("td");
 				cellKey.className = "issue-link";
 				cellKey.appendChild(a);
-				
+
 				var cellItem = document.createElement("td");
 				cellItem.appendChild(document.createTextNode(issue.fields.summary));
 
 				var cellButton = document.createElement("td");
 				var button = document.createElement("input");
 				button.type = "button";
-				button.value = "Reservar";
+				button.onclick = reserveItem;				
+				button.paramIssueKey = 	issue.key;
+				button.paramTabId = tabId;
+		
+				if(issue.fields.status.id == 10000) {
+					button.value = "__MSG_button.reserve__";
+					button.paramAction = 'reserve';
+				} else {
+					button.value = "__MSG_button.cancelreservation__";
+					button.paramAction = 'cancel';
+				}
 				cellButton.appendChild(button);
 
 				row.appendChild(cellKey);
@@ -112,10 +128,51 @@
 				return row;
 			}
 
-			var asset_types = {};
+			function reserveItem() {
+				var status_val;
+				var comment;
+
+				if(this.paramAction == 'cancel') {
+					status_val = 51;
+					comment = "__MSG_issue.comment.cancelreservation__";
+				} else {
+					status_val = 21;
+					comment = "__MSG_issue.comment.reserve__";
+				}
+
+				var postdata = {
+					update: {
+						comment: [ 
+							{
+								 add : {
+									body: comment 
+								}
+							}
+						]
+					},
+					transition: {
+							id: status_val
+					}
+				};
+
+				url = API_URL + "/issue/" + this.paramIssueKey + "/transitions";
+				var params = {};
+				params[gadgets.io.RequestParameters.HEADERS] = {"Content-Type": "application/json" };
+				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.POST;
+				params[gadgets.io.RequestParameters.POST_DATA]  = JSON.stringify(postdata);
+
+				gadgets.io.makeRequest(url, function(response,res) {
+					//alert(response.toSource());
+					//msg.createDismissibleMessage("Please close me when you're done reading me.");
+
+				}, params);
+
+				// refresco pestaña seleccionada
+				tabs.getSelectedTab().getCallback()(this.paramTabId);
+			}
 
 			function init() {
-				url = "__ATLASSIAN_BASE_URL__/rest/api/latest/project/TEST";
+				url = API_URL + "/project/" + PROJECT_KEY;
 				var params = {};
 				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
 				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
@@ -126,7 +183,8 @@
 					// pestaña de reservas del usuario
 					tabs.addTab('Mis reservas', {
 						callback: makeTab,
-						index: 0
+						index: 0,
+						tooltip: 'Material reservado o en mi poder'
 					});
 
 					// pestañas para resto material disponible
@@ -136,7 +194,7 @@
 							tooltip  : "ID: " + issuetypes[it].id
 						});
 
-						asset_types[tab_id] = {
+						item_types[tab_id] = {
 							name : issuetypes[it].name, 
 							id   : issuetypes[it].id
 						};

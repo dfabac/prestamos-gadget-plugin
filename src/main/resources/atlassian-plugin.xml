@@ -10,6 +10,10 @@
 		<param name="plugin-logo">images/plugin_ico_75x75.png</param>
 	</plugin-info>
 
+    <resource type="download" name="i18n/ALL_ALL.xml" location="i18n/ALL_ALL.xml">
+        <param name="content-type" value="text/xml; charset=UTF-8"/>
+    </resource>
+    
 	<gadget key="prestamos-gadget-plugin" name="Prestamos JIRA Gadget" location="gadget.xml" />
 
 	<web-resource key="prestamos-gadget-plugin-resources" name="prestamos-gadget-plugin Web Resources">
