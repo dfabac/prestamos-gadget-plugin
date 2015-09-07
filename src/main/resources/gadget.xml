@@ -181,10 +181,10 @@
 					var issuetypes = response.data.issueTypes;
 
 					// pestaña de reservas del usuario
-					tabs.addTab('Mis reservas', {
+					tabs.addTab("__MSG_tab.myreservations.title__", {
 						callback: makeTab,
 						index: 0,
-						tooltip: 'Material reservado o en mi poder'
+						tooltip: "__MSG_tab.myreservations.tooltip__"
 					});
 
 					// pestañas para resto material disponible
