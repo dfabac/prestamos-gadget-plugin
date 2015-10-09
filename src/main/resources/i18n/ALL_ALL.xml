@@ -1,15 +1,4 @@
 <messagebundle>
-	<msg name="gadget.title">Préstamos</msg>
-	<msg name="gadget.description">Préstamos JIRA Gadget</msg>
-
-	<msg name="tab.myreservations.title">Mis reservas</msg>
-	<msg name="tab.myreservations.tooltip">Material reservado o en mi poder</msg>
-
-	<msg name="button.reserve">Reservar</msg>
-	<msg name="button.cancelreservation">Anular reserva</msg>
-	<msg name="issue.comment.reserve">Reservado por usuario.</msg>
-	<msg name="issue.comment.cancelreservation">Reserva anulada por usuario.</msg>
-
-	<!-- TODO - las siguentes son properties, sacar a fichero --> 
-	<msg name="config.workflow.key">PRES</msg>
+	<msg name="gadget.title">Dashboard Nagios</msg>
+	<msg name="gadget.description">Cliente de WSNagios Dashboard</msg>
 </messagebundle>

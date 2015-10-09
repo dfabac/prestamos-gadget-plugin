@@ -5,205 +5,74 @@
 			author="rtve.es"
 			author_email="dfabac@gmail.com"
 			description="__MSG_gadget.description__"
-			screenshot='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-screenshot.png")'
-			thumbnail='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "gadget-thumb.png")'>
+			screenshot='#staticResourceUrl("com.rtve.pluginsjira.nagios-dashboard-gadget:nagios-dashboard-gadget-resources", "gadget-screenshot.png")'
+			thumbnail='#staticResourceUrl("com.rtve.pluginsjira.nagios-dashboard-gadget:nagios-dashboard-gadget-resources", "gadget-thumb.png")'>
 		<Optional feature="gadget-directory">
 			<Param name="categories">
                 Other
+				JIRA
 			</Param>
 		</Optional>
+		<Optional feature="atlassian.util" />
 		<Require feature="dynamic-height" />
-		<Require feature="tabs" />
+		<!--Require feature="tabs" /-->
 		<Require feature="settitle" />
-		<Require feature="minimessage" />
+		<!--Require feature="minimessage" /-->
 		<Optional feature="auth-refresh" />
-		<Locale messages='#staticResourceUrl("com.rtve.pluginsjira.prestamos-gadget-plugin:prestamos-gadget-plugin-resources", "i18n/ALL_ALL.xml")'/>
+		<Require feature="oauthpopup" />
+		<Locale messages='#staticResourceUrl("com.rtve.pluginsjira.nagios-dashboard-gadget:nagios-dashboard-gadget-resources", "i18n/ALL_ALL.xml")'/>
+		#oauth
 	</ModulePrefs>
 
-	<Content type="html" view="default"><![CDATA[
-
+	<Content type="html" view="profile"><![CDATA[
+		#requireResource("com.atlassian.gadgets.publisher:ajs-gadgets")
 		#requireResource("com.atlassian.jira.gadgets:common")
 		#includeResources()
 
+
 		<style TYPE="text/css">
-			.tablib_content_container { 
-				max-height: 150px;
-				overflow: -moz-scrollbars-vertical; 
-				overflow-y:scroll; 
-			}
+
 		</style>
 
+
+
+
 		<script type="text/javascript">
+			(function () {
+                var gadget = AJS.Gadget({
+                    baseUrl: "__ATLASSIAN_BASE_URL__",
+                    useOauth: "/rest/gadget/1.0/currentUser",
+                    view: {
+                        template: function(args) {
+                            var gadget = this;
 
-			var msg = new gadgets.MiniMessage(__MODULE_ID__);
+                            var projectList = AJS.$("<ul/>");
 
-			var PROJECT_KEY = "__MSG_config.workflow.key__";
+                            AJS.$(args.projectData.projects).each(function() {
+                                projectList.append(
+                                    AJS.$("<li/>").append(
+                                        AJS.$("<a/>").attr({
+                                            target: "_parent",
+                                            title: gadgets.util.escapeString(this.key),
+                                            href: "__ATLASSIAN_BASE_URL__" + "/browse/" + this.key
+                                        }).text(this.name)        
+                                    )
+                                );
+                            });
 
-			var API_URL = "__ATLASSIAN_BASE_URL__/rest/api/latest"; 
-
-			var item_types = {};
-
-			var tabs = new gadgets.TabSet(__MODULE_ID__);
-
-
-			function makeTab(tabId) {
-				url = API_URL + "/search?jql=";
-				url = url + escape("project = " + PROJECT_KEY);
-
-				if(tabs.getSelectedTab().getIndex() == 0) {
-					// reservas de usuario
-					url = url + escape(' AND status IN ("In Progress", "Done")');
-				} else {
-					// material disponible
-					var issuetype = item_types[tabId].id;
-					url = url + escape(' AND status = "To Do" AND issuetype =' + issuetype);
-				}
-
-				var params = {};
-				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
-				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
-
-				gadgets.io.makeRequest(url, function (response) {
-					var issues = response.data.issues;
-
-  					var main    = document.createElement("div");
-					var tbl     = document.createElement("table");
-					var tblBody = document.createElement("tbody");
-
-  					for(var issue in issues) {
-  						tblBody.appendChild(makeRow(issues[issue], tabId));
-  					}
-					
-					tbl.className = "issue-table";
-  					tbl.appendChild(tblBody);
-  					main.appendChild(tbl);
- 
-					var item = document.getElementById(tabId);
-					if (item.childNodes[0]) {
-						item.replaceChild(main, item.childNodes[0]);
-					} else {
-						item.appendChild(main);
-					}
-
-					gadgets.window.adjustHeight();
-				}, params);
-			}
-
-			function makeRow(issue, tabId){
-				var row = document.createElement("tr");
-				row.className = "issuerow";
-
-				var a = document.createElement('a');
-				a.appendChild(document.createTextNode(issue.key));
-				a.href = "__ATLASSIAN_BASE_URL__/browse/" + issue.key;
-				a.target="_parent";
-
-				var cellKey = document.createElement("td");
-				cellKey.className = "issue-link";
-				cellKey.appendChild(a);
-
-				var cellItem = document.createElement("td");
-				cellItem.appendChild(document.createTextNode(issue.fields.summary));
-
-				var cellButton = document.createElement("td");
-				var button = document.createElement("input");
-				button.type = "button";
-				button.onclick = reserveItem;				
-				button.paramIssueKey = 	issue.key;
-				button.paramTabId = tabId;
-		
-				if(issue.fields.status.id == 10000) {
-					button.value = "__MSG_button.reserve__";
-					button.paramAction = 'reserve';
-				} else {
-					button.value = "__MSG_button.cancelreservation__";
-					button.paramAction = 'cancel';
-				}
-				cellButton.appendChild(button);
-
-				row.appendChild(cellKey);
-				row.appendChild(cellItem);
-				row.appendChild(cellButton);
-
-				return row;
-			}
-
-			function reserveItem() {
-				var status_val;
-				var comment;
-
-				if(this.paramAction == 'cancel') {
-					status_val = 51;
-					comment = "__MSG_issue.comment.cancelreservation__";
-				} else {
-					status_val = 21;
-					comment = "__MSG_issue.comment.reserve__";
-				}
-
-				var postdata = {
-					update: {
-						comment: [ 
-							{
-								 add : {
-									body: comment 
-								}
-							}
-						]
-					},
-					transition: {
-							id: status_val
-					}
-				};
-
-				url = API_URL + "/issue/" + this.paramIssueKey + "/transitions";
-				var params = {};
-				params[gadgets.io.RequestParameters.HEADERS] = {"Content-Type": "application/json" };
-				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.POST;
-				params[gadgets.io.RequestParameters.POST_DATA]  = JSON.stringify(postdata);
-
-				gadgets.io.makeRequest(url, function(response,res) {
-					//alert(response.toSource());
-					//msg.createDismissibleMessage("Please close me when you're done reading me.");
-
-				}, params);
-
-				// refresco pestaña seleccionada
-				tabs.getSelectedTab().getCallback()(this.paramTabId);
-			}
-
-			function init() {
-				url = API_URL + "/project/" + PROJECT_KEY;
-				var params = {};
-				params[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.JSON;
-				params[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.GET;
-
-				gadgets.io.makeRequest(url, function (response,res) {
-					var issuetypes = response.data.issueTypes;
-
-					// pestaña de reservas del usuario
-					tabs.addTab("__MSG_tab.myreservations.title__", {
-						callback: makeTab,
-						index: 0,
-						tooltip: "__MSG_tab.myreservations.tooltip__"
-					});
-
-					// pestañas para resto material disponible
-					for(var it in issuetypes) {
-						var tab_id = tabs.addTab(issuetypes[it].name, {
-							callback : makeTab,
-							tooltip  : "ID: " + issuetypes[it].id
-						});
-
-						item_types[tab_id] = {
-							name : issuetypes[it].name, 
-							id   : issuetypes[it].id
-						};
-					}
-				}, params);
-			}
-
-			gadgets.util.registerOnLoadHandler(init);
-
+                            gadget.getView().html(projectList);
+                        },
+                        args: [{
+                            key: "username",
+                            ajaxOptions: function() {
+                                return {
+                                    url: "/rest/gadget/1.0/currentUser"
+                                };
+                            }
+                        }]
+                    }
+                });
+            })();
 		</script>
 
 	]]></Content>

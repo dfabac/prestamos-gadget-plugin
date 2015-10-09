@@ -16,11 +16,13 @@
     
 	<gadget key="prestamos-gadget-plugin" name="Prestamos JIRA Gadget" location="gadget.xml" />
 
-	<web-resource key="prestamos-gadget-plugin-resources" name="prestamos-gadget-plugin Web Resources">
+	<web-resource key="nagios-dashboard-gadget-resources" name="nagios-dashboard-gadget Web Resources">
 		<resource type="download" name="prestamos-gadget-plugin.css" location="/css/prestamos-gadget-plugin.css"/>
 		<resource type="download" name="prestamos-gadget-plugin.js" location="/js/prestamos-gadget-plugin.js"/>
 		<resource type="download" name="gadget-screenshot.png" location="images/gadget-screenshot.png"/>
 		<resource type="download" name="gadget-thumb.png" location="images/gadget-thumb.png"/>
 	</web-resource>
+
+
 
 </atlassian-plugin>
